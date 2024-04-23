@@ -1,0 +1,12 @@
+version: '3.9'
+name: postgres-nutrition
+
+services:
+  postgres:
+    image: postgres:16.1
+    environment:
+      POSTGRES_DB: "nutrition"
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "secretpassword123"
+    ports:
+      - 5432:5432
