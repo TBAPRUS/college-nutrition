@@ -5,14 +5,22 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node ./src/index.js",
-    "migrate": "node ./src/migrate.js",
+    "dev": "nodemon ./src/index.js",
+    "migrate": "node ./src/migration/migrate.js",
     "clear": "node ./src/clear-db.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Mukhin Constantine",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.6",
     "express": "^4.19.2",
-    "pg": "^8.11.5"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.5",
+    "yup": "^1.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
