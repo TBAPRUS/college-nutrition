@@ -10,3 +10,18 @@ services:
       POSTGRES_PASSWORD: "secretpassword123"
     ports:
       - 5432:5432
+    networks:
+      - db
+  pg-admin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 'postgres@mail.ru'
+      PGADMIN_DEFAULT_PASSWORD: '1'
+    ports:
+      - 80:80
+    networks:
+      - db
+
+networks:
+  db: 
+    driver: bridge
