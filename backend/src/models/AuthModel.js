@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-module.exports = class AuthService {
+module.exports = class AuthModel {
   constructor(secret) {
     this.secret = secret;
   }

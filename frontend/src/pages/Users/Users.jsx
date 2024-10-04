@@ -45,6 +45,7 @@ export default function Users() {
 
   const handleChangeSearch = (event) => {
     setSearch(event.target.value)
+    setOffset(0)
   }
 
   const handleChangeLogin = (event) => {

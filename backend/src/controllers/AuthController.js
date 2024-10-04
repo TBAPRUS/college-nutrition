@@ -5,8 +5,8 @@ const YupValidationError = require("../errors/YupValidationError");
 const UnauthorizedError = require("../errors/UnauthorizedError");
 
 module.exports = class AuthController {
-  constructor(authService, usersModel) {
-    this.authService = authService;
+  constructor(authModel, usersModel) {
+    this.authModel = authModel;
     this.usersModel = usersModel;
     this.exp = 7 * 24 * 60 * 60 * 1000;
 
@@ -27,7 +27,7 @@ module.exports = class AuthController {
   }
 
   genToken(user) {
-    return this.authService.genToken(user.id, user.isAdmin, this.exp);
+    return this.authModel.genToken(user.id, user.isAdmin, this.exp);
   }
 
   async login(req, res, next) {
@@ -39,7 +39,7 @@ module.exports = class AuthController {
       if (!user) {
         throw new HttpError('Неправильный логин или пароль', 422);
       }
-      const good = await this.authService.checkPassword(data.password, user.password);
+      const good = await this.authModel.checkPassword(data.password, user.password);
       if (!good) {
         throw new HttpError('Неправильный логин или пароль', 422);
       }
@@ -81,7 +81,7 @@ module.exports = class AuthController {
       const data = await this.registerSchema.validate(req.body, {
         stripUnknown: true
       });
-      const hash = await this.authService.genHash(data.password);
+      const hash = await this.authModel.genHash(data.password);
       const userId = await this.usersModel.create(data.login, hash);
       res
         .status(201)
@@ -110,7 +110,7 @@ module.exports = class AuthController {
     req.user = null;
     if (req.cookies.jwt) {
       try {
-        const data = await this.authService.verifyToken(req.cookies.jwt);
+        const data = await this.authModel.verifyToken(req.cookies.jwt);
         req.user = data.data;
       } catch (err) {
         res.cookie('jwt', '', {

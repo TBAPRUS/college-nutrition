@@ -46,7 +46,20 @@ export default function Header() {
         gap={4}
         sx={{display: 'flex', alignItems: 'center',
         textAlign: 'center', background: 'primary.light',
-        justifyContent: 'center'}}>
+        justifyContent: 'center'}}
+      >
+        {
+          !user.isAdmin
+          ? (
+              <Link
+                to="/meals"
+                style={getStyle("/meals")}
+              >
+                Питание
+              </Link>
+            )
+          : null
+        }
         <Link
           to="/groceries"
           style={getStyle("/groceries")}

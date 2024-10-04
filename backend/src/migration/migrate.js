@@ -1,11 +1,11 @@
 const Database = require('../Database');
-const AuthService = require('../services/AuthService');
+const AuthModel = require('../models/AuthModel');
 const groceries = require('./groceries');
 
 class Migrator {
-  constructor (database, authService) {
+  constructor (database, authModel) {
     this.database = database;
-    this.authService = authService;
+    this.authModel = authModel;
     this.client = null;
   }
 
@@ -147,10 +147,10 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       'INSERT INTO groceries(name, proteins, fats, carbohydrates, is_liquid) VALUES($1, $2, $3, $4, $5)',
       grocery
     )));
-    await Promise.all(groceries.map((grocery) => this.client.query(
-      'INSERT INTO groceries(name, proteins, fats, carbohydrates, is_liquid, user_id) VALUES($1, $2, $3, $4, $5, $6)',
-      [...grocery, 2]
-    )));
+    // await Promise.all(groceries.map((grocery) => this.client.query(
+    //   'INSERT INTO groceries(name, proteins, fats, carbohydrates, is_liquid, user_id) VALUES($1, $2, $3, $4, $5, $6)',
+    //   [...grocery, 2]
+    // )));
   }
 
   async fillDishes() {
@@ -208,6 +208,9 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
   async fillDietsDishesTable() {
     const data = [
       [1, 1, '8:00', 250],
+      [1, 3, '8:05', 450],
+      [1, 2, '12:10', 400],
+      [1, 4, '19:30', 400],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO diets_dishes(diet_id, dish_id, time, amount) VALUES($1, $2, $3, $4)',
@@ -218,14 +221,14 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
   async fillAdmins() {
     await this.client.query(
       'INSERT INTO users(login, password, is_admin) VALUES($1, $2, $3)',
-      ['admin', await this.authService.genHash('admin'), true],
+      ['admin', await this.authModel.genHash('admin'), true],
     )
   }
 
   async fillUsers() {
     const users = [
-      ['user1', await this.authService.genHash('user1')],
-      ['user2', await this.authService.genHash('user2')]
+      ['user1', await this.authModel.genHash('user1')],
+      ['user2', await this.authModel.genHash('user2')]
     ]
     await Promise.all((users.map((user) => this.client.query(
       'INSERT INTO users(login, password) VALUES($1, $2)',
@@ -236,8 +239,8 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
 
 async function main() {
   const database = new Database();
-  const authService = new AuthService('');
-  const migrator = new Migrator(database, authService);
+  const authModel = new AuthModel('');
+  const migrator = new Migrator(database, authModel);
   await migrator.migrate();
   process.exit();
 }

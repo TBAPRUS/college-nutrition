@@ -4,7 +4,7 @@ const cors = require('cors')
 const AuthController = require('./controllers/AuthController');
 const GroceriesController = require('./controllers/GroceriesController');
 const DishesController = require('./controllers/DishesController');
-const AuthService = require('./services/AuthService');
+const AuthModel = require('./models/AuthModel');
 const UsersModel = require('./models/UsersModel')
 const Database = require('./Database');
 const ErrorHandler = require('./errors/ErrorHandler');
@@ -15,15 +15,15 @@ const DietsController = require('./controllers/DietsController');
 const DietsModel = require('./models/DietsModel');
 
 const database = new Database();
-const authService = new AuthService('secret');
+const authModel = new AuthModel('secret');
 const usersModel = new UsersModel(database);
 const groceriesModel = new GroceriesModel(database);
 const dishesModel = new DishesModel(database);
 const dietsModel = new DietsModel(database);
-const authController = new AuthController(authService, usersModel);
+const authController = new AuthController(authModel, usersModel);
 const groceriesController = new GroceriesController(groceriesModel);
 const dishesController = new DishesController(dishesModel);
-const usersController = new UsersController(usersModel, authService);
+const usersController = new UsersController(usersModel, authModel);
 const dietsController = new DietsController(dietsModel)
 const errorHandler = new ErrorHandler();
 
@@ -64,6 +64,9 @@ app.get('/diets', dietsController.get);
 app.post('/diets', dietsController.post);
 app.put('/diets/:id', dietsController.put);
 app.delete('/diets/:id', dietsController.delete);
+
+app.get('/diets/selected', dietsController.getSelected);
+app.post('/diets/select', dietsController.select);
 
 app.get('/test', (req, res) => res.status(200).end('good'))
 

@@ -4,6 +4,9 @@ import Layout from "../Layout";
 import { Box, FormControl, Input, InputLabel, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, TablePagination } from "@mui/material";
 import UserContext from "../../contextes/UserContext";
 import LoadingButton from "../../components/LoadingButton";
+import DishRow from "../Dishes/DishRow";
+import DietRow from "./DietRow";
+import dayjs from "dayjs";
 
 export default function Diets() {
   const { user } = useContext(UserContext)
@@ -33,8 +36,12 @@ export default function Diets() {
         .then(({ data }) => {
           if (currentNum !== requestNum) return;
           setTotal(data.total)
-          setDiets(data.diets.map((dish) => ({
-            ...dish,
+          setDiets(data.diets.map((diet) => ({
+            ...diet,
+            dishes: diet.dishes.map((dish) => ({
+              ...dish,
+              time: dayjs().hour(dish.time.slice(0, 2)).minute(dish.time.slice(3, 5))
+            })),
             loading: false
           })))
         })
@@ -65,7 +72,7 @@ export default function Diets() {
   const handleClickCreate = async () => {
     setLoading(true);
     try {
-      await axios.post('/diets', {name, groceries: []})
+      await axios.post('/diets', {name})
       setName('')
       await getDiets()
     } catch (err) {
@@ -74,11 +81,15 @@ export default function Diets() {
     setLoading(false);
   }
 
-  const handleRemoveDish = () => {
+  const handleRemoveDiet = () => {
     getDiets()
   }
 
-  const handleEditDish = () => {
+  const handleSaveDiet = () => {
+    getDiets()
+  }
+
+  const handleSelectDiet = () => {
     getDiets()
   }
 
@@ -86,10 +97,7 @@ export default function Diets() {
 
   return (
     <Layout>
-      <Box sx={{ display: 'flex', width: '100%', gap: '32px', flexWrap: 'wrap' }}>
-        <Typography variant="h4" mb="8px">
-          Общие
-        </Typography>
+      <Box>
         <Box sx={{ marginBottom: '12px' }}>
           <FormControl variant="standard">
             <InputLabel htmlFor="search">Поиск по названию</InputLabel>
@@ -107,7 +115,10 @@ export default function Diets() {
                 <TableCell sx={{ width: '30px' }}>
                 </TableCell>
                 <TableCell>
-                  Название (100 г. продукта)
+                  Название
+                </TableCell>
+                <TableCell>
+                  Вес
                 </TableCell>
                 <TableCell>
                   Калорийность
@@ -139,6 +150,7 @@ export default function Diets() {
                 <TableCell />
                 <TableCell />
                 <TableCell />
+                <TableCell />
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
                     <LoadingButton
@@ -152,14 +164,15 @@ export default function Diets() {
                   </Box>
                 </TableCell>
               </TableRow>
-              {/* {diets.map((dish) => (
-                <DishRow
-                  key={dish.id}
-                  dish={dish}
-                  onRemove={handleRemoveDish}
-                  onEdit={handleEditDish}
+              {diets.map((diet) => (
+                <DietRow
+                  key={diet.id}
+                  diet={diet}
+                  onRemove={handleRemoveDiet}
+                  onSave={handleSaveDiet}
+                  onSelect={handleSelectDiet}
                 />
-              ))} */}
+              ))}
             </TableBody>
           </Table>
         </TableContainer>

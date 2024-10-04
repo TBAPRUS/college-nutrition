@@ -11,13 +11,14 @@ class DietsModel {
     this.client = await this.database.getClient();
   }
 
-  mapFromDB(diets) {
+  mapFromDB(diets, selectedDietId) {
     return diets.reduce((acc, cur) => {
       let diet = acc.find(({ id }) => id === cur.diet_id);
       if (!diet) {
         acc.push({
           id: cur.diet_id,
           name: cur.diet_name,
+          selected: cur.diet_id === selectedDietId,
           dishes: []
         })
         diet = acc[acc.length - 1];
@@ -68,8 +69,8 @@ class DietsModel {
     queryParams.push(params.offset || 0);
     const offset = `OFFSET $${queryParams.length}`;
 
-    const [diets, total] = await Promise.all([
-      await this.client.query(`
+    const [diets, total, selectedDietId] = await Promise.all([
+      this.client.query(`
           SELECT
             diets.id as diet_id, diets.name as diet_name,
             dd.time as dish_time, dd.amount as dish_amount, dishes.id as dish_id, dishes.name as dish_name,
@@ -79,17 +80,18 @@ class DietsModel {
           LEFT JOIN dishes ON dishes.id = dd.dish_id
           LEFT JOIN dishes_groceries dg ON dg.dish_id = dishes.id
           LEFT JOIN groceries g ON dg.grocery_id = g.id
-          ORDER BY diets.name ASC
+          ORDER BY diets.name ASC, time ASC
         `,
         queryParams
       ),
-      await this.client.query(
+      this.client.query(
         `SELECT COUNT(*) FROM diets ${where.length ? `WHERE ${where.join(' AND ')}` : ''}`,
         queryParams.slice(0, -2)
-      )
+      ),
+      this.client.query('SELECT selected_diet_id FROM users WHERE id = $1', [params.userId])
     ]);
     return {
-      diets: this.mapFromDB(diets.rows),
+      diets: this.mapFromDB(diets.rows, selectedDietId.rows[0].selected_diet_id),
       total: parseInt(total.rows[0].count)
     };
   }
@@ -97,18 +99,33 @@ class DietsModel {
   async getById(id) {
     const { rows } = await this.client.query(`
       SELECT
-        d.id as dish_id, d.name as dish_name, d.user_id as dish_user_id,
-        dg.amount as grocery_amount,
-        g.id as grocery_id, g.user_id as grocery_user_id, g.name as grocery_name, g.proteins as grocery_proteins, g.fats as grocery_fats, g.carbohydrates as grocery_carbohydrates, g.is_liquid as grocery_is_liquid
-      FROM diets d
-      LEFT JOIN diets_groceries dg ON dg.dish_id = d.id
+        diets.id as diet_id, diets.name as diet_name,
+        dd.time as dish_time, dd.amount as dish_amount, dishes.id as dish_id, dishes.name as dish_name,
+        dg.amount as grocery_amount, g.id as grocery_id, g.user_id as grocery_user_id, g.name as grocery_name, g.proteins as grocery_proteins, g.fats as grocery_fats, g.carbohydrates as grocery_carbohydrates, g.is_liquid as grocery_is_liquid
+      FROM diets
+      LEFT JOIN diets_dishes dd ON dd.diet_id = diets.id
+      LEFT JOIN dishes ON dishes.id = dd.dish_id
+      LEFT JOIN dishes_groceries dg ON dg.dish_id = dishes.id
       LEFT JOIN groceries g ON dg.grocery_id = g.id
-      WHERE d.id = $1
+      WHERE diets.id = $1
+      ORDER BY diets.name ASC, time ASC
     `, [id]);
     return this.mapFromDB(rows);
   }
 
-  async create(dish, userId) {
+  async getSelected(userId) {
+    const user = await this.client.query('SELECT selected_diet_id FROM users WHERE id = $1', [userId])
+    if (user.rows[0].selected_diet_id === null) {
+      return null
+    }
+    return (await this.getById(user.rows[0].selected_diet_id))[0]
+  }
+
+  async select(dietId, userId) {
+    await this.client.query('UPDATE users SET selected_diet_id = $1 WHERE id = $2', [dietId, userId])
+  }
+
+  async create(dish) {
     try {
       await this.client.query('BEGIN')
       const { rows } = await this.client.query(`
@@ -116,15 +133,8 @@ class DietsModel {
           VALUES($1, $2)
           RETURNING id
         `,
-        [userId, dish.name]
+        [dish.userId, dish.name]
       )
-      if (dish?.groceries?.length) {
-        this.client.query(`
-          INSERT INTO diets_groceries(dish_id, grocery_id, amount)
-          VALUES${dish.groceries.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(',')}
-          `, dish.groceries.flatMap((grocery) => [rows[0].id, grocery.id, grocery.amount])
-        )
-      }
       await this.client.query('COMMIT')
       return this.getById(rows[0].id)
     } catch (err) {
@@ -133,21 +143,21 @@ class DietsModel {
     }
   }
 
-  async update(dish, userId) {
+  async update(diet, userId) {
     try {
       await this.client.query('BEGIN')
-      const issetDish = await this.client.query('SELECT id FROM diets WHERE id = $1 AND user_id = $2', [dish.id, userId])
-      if (!issetDish.rows.length) throw new HttpError('Not found', 404)
+      const issetDiet = await this.client.query('SELECT id FROM diets WHERE id = $1 AND user_id = $2', [diet.id, userId])
+      if (!issetDiet.rows.length) throw new HttpError('Not found', 404)
 
       const { rows } = await this.client.query('UPDATE diets SET name = $1 WHERE id = $2 RETURNING id',
-        [dish.name, dish.id]
+        [diet.name, diet.id]
       )
-      await this.client.query('DELETE FROM diets_groceries WHERE dish_id = $1', [dish.id])
-      if (dish?.groceries?.length) {
+      await this.client.query('DELETE FROM diets_dishes WHERE diet_id = $1', [diet.id])
+      if (diet?.dishes?.length) {
         this.client.query(`
-          INSERT INTO diets_groceries(dish_id, grocery_id, amount)
-          VALUES${dish.groceries.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(',')}
-          `, dish.groceries.flatMap((grocery) => [rows[0].id, grocery.id, grocery.amount])
+          INSERT INTO diets_dishes(diet_id, dish_id, amount, time)
+          VALUES${diet.dishes.map((_, i) => `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`).join(',')}
+          `, diet.dishes.flatMap((dish) => [rows[0].id, dish.id, dish.amount, dish.time])
         )
       }
       await this.client.query('COMMIT')

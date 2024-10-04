@@ -3,26 +3,21 @@ import axios from "axios";
 import { Fragment, memo, useContext, useEffect, useMemo, useState } from "react";
 import UserContext from "../../contextes/UserContext";
 
-export default function AddGroceryToDish(props) {
-  const { user } = useContext(UserContext)
+export default function AddDishToDiet(props) {
   const [search, setSearch] = useState('')
-  const [groceries, setGroceries] = useState([]);
+  const [dishes, setDishes] = useState([]);
 
-  const getGroceries = (() => {
+  const getDishes = (() => {
     let requestNumber = 0;
     return (search) => {
       requestNumber++;
       const currentNumber = requestNumber;
-      Promise.all([
-        axios.get('/groceries', {
-          params: { limit: 10, offset: 0, userId: user.id, name: search }
-        }),
-        axios.get('/groceries', {
-          params: { limit: 10, offset: 0, name: search }
-        })
-      ]).then(([personal, general]) => {
+      axios.get('/dishes', {
+        params: { limit: 10, offset: 0, name: search }
+      })
+        .then((data) => {
           if (requestNumber !== currentNumber) return;
-          setGroceries([...personal.data.groceries, ...general.data.groceries].filter(({id}) => !ids[id]))
+          setDishes(data.data.dishes.filter(({id}) => !ids[id]))
         })
         .catch((error) => {
           console.log(error)
@@ -34,22 +29,17 @@ export default function AddGroceryToDish(props) {
 
   const handleChangeSearch = (event) => {
     setSearch(event.target.value)
-    getGroceries(event.target.value);
+    getDishes(event.target.value);
   }
 
   const handleSelectItem = (item) => {
-    props.onSelect({
-      ...item,
-      carbohydrates: parseFloat(item.carbohydrates),
-      fats: parseFloat(item.fats),
-      proteins: parseFloat(item.proteins),
-    })
+    props.onSelect({ ...item })
     handleClose()
   }
 
   const handleClose = () => {
     setSearch('')
-    setGroceries([])
+    setDishes([])
     props.onClose();
   }
 
@@ -64,32 +54,32 @@ export default function AddGroceryToDish(props) {
         }}
       >
         <Typography variant="h6">
-          Добавить продукт в состав блюда.
+          Добавить блюдо в расписание приёма пищи.
         </Typography>
         <Divider sx={{ marginBottom: '8px' }} />
         <FormControl variant="standard" sx={{ marginBottom: '16px' }}>
-          <InputLabel htmlFor="grocery-name">Поиск по названию</InputLabel>
+          <InputLabel htmlFor="dish-name">Поиск по названию</InputLabel>
           <Input
-            id="grocery-name"
+            id="dish-name"
             value={search}
             onChange={handleChangeSearch}
           />
         </FormControl>
         {
-          groceries.length
-          ? <Fragment>
+          dishes.length
+          ? <>
               <List component={Paper} sx={{ maxHeight: '250px', overflowY: 'scroll' }}>
                 {
-                  groceries.map((grocery) => (
-                    <ListItem key={grocery.id}>
-                      <ListItemButton onClick={() => handleSelectItem(grocery)}>
-                        { grocery.name }
+                  dishes.map((dish) => (
+                    <ListItem key={dish.id}>
+                      <ListItemButton onClick={() => handleSelectItem(dish)}>
+                        { dish.name }
                       </ListItemButton>
                     </ListItem>
                   ))
                 }
               </List>
-            </Fragment>
+            </>
           : null
         }
         <Box sx={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>

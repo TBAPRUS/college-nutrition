@@ -60,6 +60,7 @@ export default function PersonalGroceries() {
 
   const handleChangeSearch = (event) => {
     setSearch(event.target.value)
+    setOffset(0)
   }
 
   const handleChangeName = (event) => {

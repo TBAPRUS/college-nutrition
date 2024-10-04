@@ -1,4 +1,4 @@
-import { Box, FormControl, Input, InputLabel, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Checkbox, TablePagination } from "@mui/material";
+import { Box, FormControl, Input, InputLabel, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Checkbox, TablePagination, Tooltip } from "@mui/material";
 import axios from "axios";
 import { useContext, useEffect, useMemo, useState } from "react";
 import UserContext from "../../contextes/UserContext";
@@ -42,15 +42,21 @@ export default function GeneralGroceries() {
       })
   }
 
-  const groceries = useMemo(
+  const filteredGroceries = useMemo(
     () => generalGroceries
-      .filter((grocery) => grocery.name.toLowerCase().indexOf(search.toLowerCase()) !== -1)
+      .filter((grocery) => grocery.name.toLowerCase().indexOf(search.toLowerCase()) !== -1),
+    [generalGroceries, search]
+  )
+
+  const groceries = useMemo(
+    () => filteredGroceries
       .filter((_, i) => i >= offset && i < offset + limit),
-    [generalGroceries, search, limit, offset]
+    [filteredGroceries, limit, offset]
   )
 
   const handleChangeSearch = (event) => {
     setSearch(event.target.value)
+    setOffset(0)
   }
 
   const handleChangeName = (event) => {
@@ -248,16 +254,29 @@ export default function GeneralGroceries() {
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
                     {
-                      user.isAdmin &&
-                      <LoadingButton
-                        loading={row.loading}
-                        disabled={row.dishesCount > 0}
-                        variant="contained"
-                        color="error"
-                        onClick={() => handleRemoveGrocery(row.id)}
-                      >
-                        Удалить
-                      </LoadingButton>
+                      user.isAdmin 
+                      ? row.dishesCount > 0
+                        ? <Tooltip title="Вы не можете удалить продукт, пока он используется в хотя бы одном блюде" arrow>
+                            <Box>
+                              <LoadingButton
+                                loading={row.loading}
+                                disabled
+                                variant="contained"
+                                color="error"
+                              >
+                                Удалить
+                              </LoadingButton>
+                            </Box>
+                          </Tooltip>
+                        : <LoadingButton
+                            loading={row.loading}
+                            variant="contained"
+                            color="error"
+                            onClick={() => handleRemoveGrocery(row.id)}
+                          >
+                            Удалить
+                          </LoadingButton>
+                      : null
                     }
                   </Box>
                 </TableCell>
@@ -270,7 +289,7 @@ export default function GeneralGroceries() {
         labelRowsPerPage={'Строк на странице'}
         component={Paper}
         sx={{ marginTop: '12px' }}
-        count={total}
+        count={filteredGroceries?.length || 0}
         page={Math.floor(offset / limit)}
         rowsPerPage={limit}
         onPageChange={handleChangePage}

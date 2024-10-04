@@ -2,9 +2,9 @@ const { object, number, string, boolean } = require('yup');
 const HttpError = require('../errors/HttpError');
 
 class UsersController {
-  constructor(usersModel, authService) {
+  constructor(usersModel, authModel) {
     this.usersModel = usersModel;
-    this.authService = authService;
+    this.authModel = authModel;
 
     this.getSchema = object({
       login: string(),
@@ -50,7 +50,7 @@ class UsersController {
       const data = await this.postSchema.validate(req.body, {
         stripUnknown: true
       })
-      const hash = await this.authService.genHash(data.password);
+      const hash = await this.authModel.genHash(data.password);
       const userId = await this.usersModel.create(data.login, hash);
       res.json(await this.usersModel.findById(userId));
     } catch (err) {
@@ -67,7 +67,7 @@ class UsersController {
         stripUnknown: true
       })
       if (data.password?.length > 0) {
-        const hash = await this.authService.genHash(data.password);
+        const hash = await this.authModel.genHash(data.password);
         data.password = hash;
       }
       const user = await this.usersModel.update(data)

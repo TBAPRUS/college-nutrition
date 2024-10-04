@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import './index.css';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import axios from 'axios';
@@ -10,10 +12,11 @@ import Groceries from './pages/Groceries/Groceries';
 import UserContext from './contextes/UserContext';
 import Dishes from './pages/Dishes/Dishes';
 import Users from './pages/Users/Users';
+import Meals from './pages/Meals/Meals';
 
 axios.defaults.withCredentials = true
 axios.interceptors.request.use(function (config) {
-  config.url = `http://192.168.0.102:7777${config.url}`;
+  config.url = `http://localhost:7777${config.url}`;
   return config
 })
 
@@ -55,18 +58,23 @@ const Bootstrap = () => {
 
   return (
     <React.StrictMode>
-      <UserContext.Provider value={userContextValue}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/groceries" element={user ? <Groceries /> : <Navigate to="/login" />} />
-            <Route path="/dishes" element={user ? <Dishes /> : <Navigate to="/login" />} />
-            <Route path="/diets" element={user ? <Diets /> : <Navigate to="/login" />} />
-            <Route path="/users" element={user?.isAdmin ? <Users /> : <Navigate to="/login" />} />
-            <Route path="/login" element={user ? <Navigate to="/groceries" /> : <Login onLogin={onLogin} />} />
-            <Route path="*" element={<Navigate to="/groceries" />} />
-          </Routes>
-        </BrowserRouter>
-      </UserContext.Provider>
+      {/* <p>hui</p> */}
+      <marquee>{new Array(100).fill(null).map(() => ('hui '))}</marquee>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <UserContext.Provider value={userContextValue}>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/meals" element={user ? <Meals /> : <Navigate to="/login" />} />
+              <Route path="/groceries" element={user ? <Groceries /> : <Navigate to="/login" />} />
+              <Route path="/dishes" element={user ? <Dishes /> : <Navigate to="/login" />} />
+              <Route path="/diets" element={user ? <Diets /> : <Navigate to="/login" />} />
+              <Route path="/users" element={user?.isAdmin ? <Users /> : <Navigate to="/login" />} />
+              <Route path="/login" element={user ? <Navigate to="/groceries" /> : <Login onLogin={onLogin} />} />
+              <Route path="*" element={<Navigate to="/groceries" />} />
+            </Routes>
+          </BrowserRouter>
+        </UserContext.Provider>
+      </LocalizationProvider>
     </React.StrictMode>
   )
 }

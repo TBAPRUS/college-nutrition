@@ -120,6 +120,7 @@ export default function DishRow(props) {
   }
 
   const handleSelectGrocery = (grocery) => {
+    console.log(grocery)
     setAddedGroceries(((groceries) => [{...grocery, amount: ''}, ...groceries]))
   }
   
@@ -247,6 +248,9 @@ export default function DishRow(props) {
                       Название (100 г. продукта)
                     </TableCell>
                     <TableCell>
+                      Калорийность
+                    </TableCell>
+                    <TableCell>
                       Белки
                     </TableCell>
                     <TableCell>
@@ -276,6 +280,7 @@ export default function DishRow(props) {
                           <TableCell />
                           <TableCell />
                           <TableCell />
+                          <TableCell />
                           <TableCell sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
                               variant="contained"
@@ -295,13 +300,16 @@ export default function DishRow(props) {
                         { row.name }
                       </TableCell>
                       <TableCell>
-                        { row.proteins } г.
+                        { (row.proteins * 4.1 + row.fats * 9.29 + row.carbohydrates * 4.2).toFixed(2) } ккал
                       </TableCell>
                       <TableCell>
-                        { row.fats } г.
+                        { row.proteins.toFixed(2) } г.
                       </TableCell>
                       <TableCell>
-                        { row.carbohydrates } г.
+                        { row.fats.toFixed(2) } г.
+                      </TableCell>
+                      <TableCell>
+                        { row.carbohydrates.toFixed(2) } г.
                       </TableCell>
                       <TableCell>
                         <Input
@@ -339,13 +347,16 @@ export default function DishRow(props) {
                         { row.name }
                       </TableCell>
                       <TableCell>
-                        { row.proteins } г.
+                        { (row.proteins * 4.1 + row.fats * 9.29 + row.carbohydrates * 4.2).toFixed(2) } ккал
                       </TableCell>
                       <TableCell>
-                        { row.fats } г.
+                        { row.proteins.toFixed(2) } г.
                       </TableCell>
                       <TableCell>
-                        { row.carbohydrates } г.
+                        { row.fats.toFixed(2) } г.
+                      </TableCell>
+                      <TableCell>
+                        { row.carbohydrates.toFixed(2) } г.
                       </TableCell>
                       <TableCell>
                         {
@@ -354,6 +365,7 @@ export default function DishRow(props) {
                               sx={{ marginRight: "4px", maxWidth: "60px" }}
                               placeholder="Вес"
                               type="number"
+                              disabled={removedGroceries[row.id] == true}
                               value={updatedGroceries[row.id] !== undefined ? updatedGroceries[row.id] : row.amount}
                               onChange={(event) => handleChangeAmount(event, row.id)}
                             />

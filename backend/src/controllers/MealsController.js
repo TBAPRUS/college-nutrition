@@ -1,8 +1,8 @@
 const { object, number, string, array } = require('yup')
 
-class DietsController {
-  constructor(dietsModel) {
-    this.dietsModel = dietsModel;
+class MealsController {
+  constructor(mealsModel) {
+    this.mealsModel = mealsModel;
 
     this.getSchema = object({
       userId: number(),
@@ -18,7 +18,7 @@ class DietsController {
       name: string()
     })
     this.selectSchema = object({
-      dietId: number().nullable(),
+      mealId: number().nullable(),
     })
     this.putSchema = object({
       id: number(),
@@ -54,8 +54,8 @@ class DietsController {
       if (typeof query.name === 'string' && !query.name) {
         delete query.name
       }
-      const diets = await this.dietsModel.get(query);
-      res.json(diets);
+      const meals = await this.mealsModel.get(query);
+      res.json(meals);
     } catch (err) {
       next(err);
     }
@@ -66,8 +66,8 @@ class DietsController {
       const { id } = await this.getByIdSchema.validate(req.params, {
         stripUnknown: true,
       });
-      const diet = await this.dietsModel.getById(id);
-      res.json(diet);
+      const meal = await this.mealsModel.getById(id);
+      res.json(meal);
     } catch (err) {
       next(err);
     }
@@ -75,8 +75,8 @@ class DietsController {
 
   async getSelected(req, res, next) {
     try {
-      const diet = await this.dietsModel.getSelected(req.user.id)
-      res.json(diet)
+      const meal = await this.mealsModel.getSelected(req.user.id)
+      res.json(meal)
     } catch (err) {
       next(err)
     }
@@ -84,10 +84,10 @@ class DietsController {
 
   async select(req, res, next) {
     try {
-      const { dietId } = await this.selectSchema.validate(req.body, {
+      const { mealId } = await this.selectSchema.validate(req.body, {
         stripUnknown: true
       })
-      await this.dietsModel.select(dietId, req.user.id)
+      await this.mealsModel.select(mealId, req.user.id)
       res.json()
     } catch (err) {
       next(err)
@@ -99,8 +99,8 @@ class DietsController {
       const data = await this.postSchema.validate({...req.body, userId: req.user.id}, {
         stripUnknown: true
       })
-      const diet = await this.dietsModel.create(data)
-      res.json(diet);
+      const meal = await this.mealsModel.create(data)
+      res.json(meal);
     } catch (err) {
       next(err);
     }
@@ -111,8 +111,8 @@ class DietsController {
       const data = await this.putSchema.validate({...req.body, id: req.params.id}, {
         stripUnknown: true
       })
-      const diet = await this.dietsModel.update(data, req.user.id)
-      res.json(diet);
+      const meal = await this.mealsModel.update(data, req.user.id)
+      res.json(meal);
     } catch (err) {
       next(err);
     }
@@ -123,7 +123,7 @@ class DietsController {
       const { id } = await this.getByIdSchema.validate(req.params, {
         stripUnknown: true,
       });
-      await this.dietsModel.delete(id)
+      await this.mealsModel.delete(id)
       res.json({});
     } catch (err) {
       next(err);
@@ -131,4 +131,4 @@ class DietsController {
   }
 }
 
-module.exports = DietsController;
+module.exports = MealsController;
