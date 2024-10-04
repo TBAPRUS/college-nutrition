@@ -13,6 +13,7 @@ import UserContext from './contextes/UserContext';
 import Dishes from './pages/Dishes/Dishes';
 import Users from './pages/Users/Users';
 import Meals from './pages/Meals/Meals';
+import 'dayjs/locale/ru'
 
 axios.defaults.withCredentials = true
 axios.interceptors.request.use(function (config) {
@@ -60,7 +61,7 @@ const Bootstrap = () => {
     <React.StrictMode>
       {/* <p>hui</p> */}
       <marquee>{new Array(100).fill(null).map(() => ('hui '))}</marquee>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale='ru'>
         <UserContext.Provider value={userContextValue}>
           <BrowserRouter>
             <Routes>

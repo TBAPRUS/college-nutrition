@@ -22,6 +22,7 @@ export default function DietRow(props) {
 
   const diet = useMemo(() => {
     let amount = 0
+    let weight = 0
     let proteins = 0
     let fats = 0
     let carbohydrates = 0
@@ -33,6 +34,7 @@ export default function DietRow(props) {
       let dishCarbohydrates = 0
 
       dish.groceries.forEach((grocery) => {
+        weight += grocery.amount
         dishWeight += grocery.amount
         dishProteins += grocery.proteins * grocery.amount / 100
         dishFats += grocery.fats * grocery.amount / 100
@@ -44,6 +46,16 @@ export default function DietRow(props) {
       fats += dishFats / dishWeight * dish.amount
       carbohydrates += dishCarbohydrates / dishWeight * dish.amount
 
+      if (dishWeight == 0) {
+        return {
+          ...dish,
+          calories: 0,
+          proteins: 0,
+          fats: 0,
+          carbohydrates: 0
+        }
+      }
+
       return {
         ...dish,
         calories: (dishProteins * 4.1 + dishFats * 9.29 + dishCarbohydrates * 4.2) / dishWeight,
@@ -53,9 +65,13 @@ export default function DietRow(props) {
       }
     })
 
+    if (weight === 0) {
+      return {...props.diet, dishes, amount, calories: 0, proteins: 0, fats: 0, carbohydrates: 0}
+    }
+
     return {
       ...props.diet,
-      dishes: dishes,
+      dishes,
       amount: amount,
       calories: proteins * 4.1 + fats * 9.29 + carbohydrates * 4.2,
       proteins: proteins,
@@ -81,6 +97,10 @@ export default function DietRow(props) {
       fats += grocery.fats * grocery.amount / 100
       carbohydrates += grocery.carbohydrates * grocery.amount / 100
     })
+
+    if (weight == 0) {
+      return {...dish, calories: 0, proteins: 0, fats: 0, carbohydrates: 0}
+    }
 
     proteins = proteins / weight * (dish.amount || 0)
     fats = fats / weight * (dish.amount || 0)
@@ -238,6 +258,8 @@ export default function DietRow(props) {
       !addedDishes.find((dish) => !dish.amount || !dish.time),
     [name, diet, removedDishes, updatedDishes, addedDishes]
   )
+
+  console.log(addedDishes)
 
   return (
     <>

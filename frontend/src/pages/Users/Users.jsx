@@ -282,6 +282,7 @@ export default function Users() {
                             <Button
                               disabled={row.isAdmin}
                               variant="contained"
+                              color="warning"
                               onClick={() => handleStartEditing(row.id)}
                             >
                               Изменить

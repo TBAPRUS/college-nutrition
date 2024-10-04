@@ -4,6 +4,7 @@ const cors = require('cors')
 const AuthController = require('./controllers/AuthController');
 const GroceriesController = require('./controllers/GroceriesController');
 const DishesController = require('./controllers/DishesController');
+const MealsController = require('./controllers/MealsController');
 const AuthModel = require('./models/AuthModel');
 const UsersModel = require('./models/UsersModel')
 const Database = require('./Database');
@@ -13,6 +14,7 @@ const DishesModel = require('./models/DishesModel');
 const UsersController = require('./controllers/UsersController');
 const DietsController = require('./controllers/DietsController');
 const DietsModel = require('./models/DietsModel');
+const MealsModel = require('./models/MealsModel')
 
 const database = new Database();
 const authModel = new AuthModel('secret');
@@ -20,11 +22,13 @@ const usersModel = new UsersModel(database);
 const groceriesModel = new GroceriesModel(database);
 const dishesModel = new DishesModel(database);
 const dietsModel = new DietsModel(database);
+const mealsModel = new MealsModel(database);
 const authController = new AuthController(authModel, usersModel);
 const groceriesController = new GroceriesController(groceriesModel);
 const dishesController = new DishesController(dishesModel);
 const usersController = new UsersController(usersModel, authModel);
 const dietsController = new DietsController(dietsModel)
+const mealsController = new MealsController(mealsModel)
 const errorHandler = new ErrorHandler();
 
 const app = express();
@@ -68,6 +72,11 @@ app.delete('/diets/:id', dietsController.delete);
 app.get('/diets/selected', dietsController.getSelected);
 app.post('/diets/select', dietsController.select);
 
+app.get('/meals', mealsController.get);
+app.post('/meals', mealsController.post);
+app.put('/meals/:id', mealsController.put);
+app.delete('/meals/:id', mealsController.delete);
+
 app.get('/test', (req, res) => res.status(200).end('good'))
 
 app.use(errorHandler.handle)
@@ -79,6 +88,7 @@ async function main() {
   await groceriesModel.setup();
   await dishesModel.setup();
   await dietsModel.setup();
+  await mealsModel.setup()
   app.listen(7777, () => {
     console.log('server listening on 7777');
   });

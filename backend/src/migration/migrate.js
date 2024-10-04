@@ -35,6 +35,8 @@ class Migrator {
       console.log('Success fillDishesGroceriesTable');
       await this.mealsTable();
       console.log('Success mealsTable');
+      await this.fillMealsTable();
+      console.log('Success fillMealsTable');
       await this.dietsTable();
       console.log('Success dietsTable');
       await this.fillDietsTable();
@@ -215,6 +217,30 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO diets_dishes(diet_id, dish_id, time, amount) VALUES($1, $2, $3, $4)',
       row
+    )))
+  }
+
+  getDate(hoursAgo, minutesAge = 0) {
+    const date = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    date.setHours(date.getHours() - hoursAgo)
+    date.setMinutes(date.getMinutes() - minutesAge)
+    return date.toISOString()
+  }
+
+  async fillMealsTable() {
+    const data = [
+      [1, 2, 0, 0, 470],
+      [2, 2, 1, 0, 300],
+      [3, 2, 2, 45, 500],
+      [4, 2, 8, 25, 220],
+      [1, 2, 12, 0, 350],
+      [2, 2, 23, 11, 455],
+      [3, 2, 34, 45, 233],
+      [4, 2, 36, 2, 160],
+    ]
+    await Promise.all(data.map((row) => this.client.query(
+      'INSERT INTO meals(dish_id, user_id, eaten_at, amount) VALUES($1, $2, $3, $4)',
+      [row[0], row[1], this.getDate(row[2], row[3]), row[4]]
     )))
   }
 

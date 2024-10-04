@@ -108,7 +108,7 @@ class DietsModel {
       LEFT JOIN dishes_groceries dg ON dg.dish_id = dishes.id
       LEFT JOIN groceries g ON dg.grocery_id = g.id
       WHERE diets.id = $1
-      ORDER BY diets.name ASC, time ASC
+      ORDER BY time ASC
     `, [id]);
     return this.mapFromDB(rows);
   }

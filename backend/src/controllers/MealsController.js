@@ -1,4 +1,4 @@
-const { object, number, string, array } = require('yup')
+const { object, number, string, array, date } = require('yup')
 
 class MealsController {
   constructor(mealsModel) {
@@ -6,32 +6,25 @@ class MealsController {
 
     this.getSchema = object({
       userId: number(),
-      name: string(),
       limit: number().min(10).max(300),
       offset: number().min(0),
     });
-    this.getByIdSchema = object({
-      id: number()
-    });
     this.postSchema = object({
+      dishId: number(),
       userId: number(),
-      name: string()
+      eatenAt: string().test(date => new Date(date).toString() !== 'Invalid Date'),
+      amount: number().min(0),
     })
     this.selectSchema = object({
       mealId: number().nullable(),
     })
     this.putSchema = object({
       id: number(),
-      name: string(),
-      dishes: array().of(object({
-        id: number(),
-        amount: number().min(1),
-        time: string()
-      })),
+      amount: number(),
+      eatenAt: string().test(date => new Date(date).toString() !== 'Invalid Date'),
     })
   
     this.get = this.get.bind(this);
-    this.getById = this.getById.bind(this);
     this.getSelected = this.getSelected.bind(this);
     this.select = this.select.bind(this);
     this.post = this.post.bind(this);
@@ -48,26 +41,8 @@ class MealsController {
         stripUnknown: true
       });
 
-      if (query.name) {
-        query.name = `%${query.name.replaceAll(/[^а-яА-Яa-zA-Z0-9]/g, '')}%`
-      }
-      if (typeof query.name === 'string' && !query.name) {
-        delete query.name
-      }
       const meals = await this.mealsModel.get(query);
       res.json(meals);
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  async getById(req, res, next) {
-    try {
-      const { id } = await this.getByIdSchema.validate(req.params, {
-        stripUnknown: true,
-      });
-      const meal = await this.mealsModel.getById(id);
-      res.json(meal);
     } catch (err) {
       next(err);
     }
@@ -120,10 +95,7 @@ class MealsController {
 
   async delete(req, res, next) {
     try {
-      const { id } = await this.getByIdSchema.validate(req.params, {
-        stripUnknown: true,
-      });
-      await this.mealsModel.delete(id)
+      await this.mealsModel.delete(req.params.id)
       res.json({});
     } catch (err) {
       next(err);
