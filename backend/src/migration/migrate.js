@@ -110,8 +110,8 @@ CREATE TABLE IF NOT EXISTS dishes_groceries (
     await this.client.query(`
 CREATE TABLE IF NOT EXISTS meals (
   id SERIAL PRIMARY KEY,
-  dish_id INTEGER REFERENCES dishes(id) NOT NULL,
-  user_id INTEGER REFERENCES users(id) NOT NULL,
+  dish_id INTEGER REFERENCES dishes(id) ON DELETE CASCADE NOT NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
   eaten_at TIMESTAMP NOT NULL,
   amount INTEGER NOT NULL
 )
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS diets (
     `);
     await this.client.query(`
 ALTER TABLE users
-ADD selected_diet_id INTEGER REFERENCES diets(id)
+ADD selected_diet_id INTEGER REFERENCES diets(id) ON DELETE SET NULL
     `);
   }
 
@@ -136,8 +136,8 @@ ADD selected_diet_id INTEGER REFERENCES diets(id)
     await this.client.query(`
 CREATE TABLE IF NOT EXISTS diets_dishes (
   id SERIAL PRIMARY KEY,
-  diet_id INTEGER REFERENCES diets(id) NOT NULL,
-  dish_id INTEGER REFERENCES dishes(id) NOT NULL,
+  diet_id INTEGER REFERENCES diets(id) ON DELETE CASCADE NOT NULL,
+  dish_id INTEGER REFERENCES dishes(id) ON DELETE CASCADE NOT NULL,
   time TIME NOT NULL,
   amount INTEGER NOT NULL
 )
@@ -237,6 +237,16 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       [2, 2, 23, 11, 455],
       [3, 2, 34, 45, 233],
       [4, 2, 36, 2, 160],
+      [3, 2, 56, 2, 600],
+      [4, 2, 64, 2, 160],
+      [4, 2, 78, 2, 160],
+      [3, 2, 87, 2, 160],
+      [4, 2, 95, 2, 160],
+      [1, 2, 111, 0, 470],
+      [1, 2, 111, 0, 470],
+      [1, 2, 120, 0, 470],
+      [4, 2, 144, 2, 160],
+      [4, 2, 156, 2, 160],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO meals(dish_id, user_id, eaten_at, amount) VALUES($1, $2, $3, $4)',

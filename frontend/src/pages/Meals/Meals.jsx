@@ -6,14 +6,16 @@ import LoadingButton from "../../components/LoadingButton";
 import MealsSelectDish from "./MealsSelectDish";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
+import { LineChart } from "@mui/x-charts";
 
 export default function Meals() {
   const [meals, setMeals] = useState([])
+  const [statistic, setStatistic] = useState(null)
   const [selectedDiet, setSelectedDiet] = useState(null)
   const [newMeal, setNewMeal] = useState(null)
 
   const [updatedMeals, setUpdatedMeals] = useState({})
-
+  const [creatingLoading, setCreatingLoading] = useState(false)
   const [selectingDish, setSelectingDish] = useState(false)
 
   const [search, setSearch] = useState('');
@@ -26,6 +28,10 @@ export default function Meals() {
   }, [search, offset, limit])
 
   useEffect(() => {
+    getStatistic()    
+  }, [])
+
+  useEffect(() => {
     axios.get('/diets/selected')
       .then(({ data }) => {
         if (data) {
@@ -33,9 +39,7 @@ export default function Meals() {
             ...data,
             dishes: data.dishes.map((dish) => ({
               ...dish,
-              creatingLoading: false,
-              editingLoading: false,
-              removingLoading: false,
+              creatingLoading: false
             }))
           })
         }
@@ -68,7 +72,7 @@ export default function Meals() {
   }), [meals])
 
   const dietMealsToView = useMemo(() => {
-    if (!selectedDiet) {
+    if (!selectedDiet || offset !== 0) {
       return []
     }
 
@@ -118,8 +122,58 @@ export default function Meals() {
     return acc
   }, {}) : {}, [selectedDiet])
 
-  const getEatenStats = () => {
+  const series = useMemo(() => {
+    const now = new Date()
+    const days = new Array(7).fill(null).map((_, i) => {
+      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0)
+      return day
+    }).reverse().reduce((acc, cur, i) => {
+      acc[cur.toISOString()] = i
+      return acc
+    }, {})
+    
+    const calories = [0, 0, 0, 0, 0, 0, 0]
+    const proteins = [0, 0, 0, 0, 0, 0, 0]
+    const fats = [0, 0, 0, 0, 0, 0, 0]
+    const carbohydrates = [0, 0, 0, 0, 0, 0, 0]
+    
+    for (const key in statistic) {
+      calories[days[key]] += statistic[key].calories
+      proteins[days[key]] += statistic[key].proteins
+      fats[days[key]] += statistic[key].fats
+      carbohydrates[days[key]] += statistic[key].carbohydrates
+    }
+    
+    return [
+      { curve: "linear", data: calories.map((item) => item.toFixed(2)), label: 'Калорийность' },
+      { curve: "linear", data: proteins.map((item) => item.toFixed(2)), label: 'Белки' },
+      { curve: "linear", data: fats.map((item) => item.toFixed(2)), label: 'Жиры' },
+      { curve: "linear", data: carbohydrates.map((item) => item.toFixed(2)), label: 'Углеводы' },
+    ]
+  }, [statistic])
 
+  const now = new Date()
+  const xAxis = new Array(7).fill(null).map((_, i) => {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0)
+    return day
+  }).reverse()
+
+  const getStatistic = () => {
+    let requestNum = 0
+    return (() => {
+      requestNum++;
+      const currentNum = requestNum;
+      return axios.get('/statistic', {
+        params: { timezoneOffset: new Date().getTimezoneOffset() }
+      })
+        .then(({ data }) => {
+          if (currentNum !== requestNum) return;
+          setStatistic(data)
+        })
+        .catch((error) => {
+          console.log(error)
+        })
+    })()
   }
 
   const getMeals = () => {
@@ -133,7 +187,11 @@ export default function Meals() {
         .then(({ data }) => {
           if (currentNum !== requestNum) return;
           setTotal(data.total)
-          setMeals(data.meals.map((meal) => ({...meal, removingLoading: false})))
+          setMeals(data.meals.map((meal) => ({
+            ...meal,
+            removingLoading: false,
+            editingLoading: false,
+          })))
         })
         .catch((error) => {
           console.log(error)
@@ -150,7 +208,45 @@ export default function Meals() {
     setOffset(Math.floor(offset / event.target.value) * event.target.value)
   }
 
-  const handleAddDish = async () => {}
+  const handleAddDish = async (dish) => {
+    let weight = 0;
+    let proteins = 0;
+    let fats = 0;
+    let carbohydrates = 0;
+
+    dish.groceries.forEach((grocery) => {
+      weight += grocery.amount;
+      proteins += grocery.proteins * grocery.amount / 100;
+      fats += grocery.fats * grocery.amount / 100;
+      carbohydrates += grocery.carbohydrates * grocery.amount / 100;
+    })
+    
+    let cpfc;
+    if (weight === 0) {
+      cpfc = {
+        calories: 0,
+        proteins: 0,
+        fats: 0,
+        carbohydrates: 0,
+      }
+    } else {
+      cpfc = {
+        calories: (proteins * 4.1 + fats * 9.29 + carbohydrates * 4.2) / weight,
+        proteins: proteins / weight,
+        fats: fats / weight,
+        carbohydrates: carbohydrates / weight,
+      }
+    }
+
+    setNewMeal({
+      ...cpfc,
+      amount: '',
+      dishId: dish.id,
+      eatenAt: dayjs(),
+      groceries: dish.groceries,
+      name: dish.name,
+    })
+  }
 
   const handleStartEditingMeal = (id) => {
     const meal = meals.find((meal) => meal.id == id)
@@ -201,11 +297,10 @@ export default function Meals() {
         amount: data.amount
       })
       await getMeals()
+      await getStatistic()
     } catch (err) {
       console.log(err)
     }
-
-    await new Promise((r) => setTimeout(() => r(), 1000))
   }
 
   const handleAddDietMeal = async (id) => {
@@ -219,6 +314,7 @@ export default function Meals() {
     try {
       await axios.delete(`/meals/${id}`)
       await getMeals()
+      await getStatistic()
     } catch (err) {
       console.log(err)
     }
@@ -234,10 +330,28 @@ export default function Meals() {
       })
       handleStopEditingMeal(id)
       getMeals()
+      getStatistic()
     } catch (err) {
       console.log(err)
     }
     setMeals((meals) => meals.map((meal) => meal.id === id ? ({...meal, editingLoading: false}) : meal))
+  }
+
+  const handleCreateNewMeal = async () => {
+    setCreatingLoading(true)
+    try {
+      await axios.post('/meals', {
+        dishId: newMeal.dishId,
+        eatenAt: newMeal.eatenAt,
+        amount: newMeal.amount,
+      })
+      setNewMeal(null)
+      getMeals()
+      getStatistic()
+    } catch (err) {
+      console.log(err)
+    }
+    setCreatingLoading(false)
   }
 
   const bgColorByMeal = (meal) => {
@@ -255,20 +369,35 @@ export default function Meals() {
     return `${addZero(date.getDate())}.${addZero(date.getMonth() + 1)}.${date.getFullYear()} ${addZero(date.getHours())}:${addZero(date.getMinutes())}`
   }
 
+  const canEdit = (id) => {
+    return parseInt(updatedMeals[id].amount) > 0 && updatedMeals[id].eatenAt?.isValid()
+  }
+
+  const canAdd = parseInt(newMeal?.amount) > 0 && newMeal?.eatenAt?.isValid();
+  const weekAgo = (() => {
+    const week = new Date()
+    week.setDate(week.getDate() - 7)
+    return dayjs(week)
+  })()
+  const today = dayjs()
+
   return (
     <Layout>
       <Typography variant="h4" mb="8px">
         Сводка информации о питании
       </Typography>
-      {
-        selectedDiet
-        ? <Typography sx={{  }}>
-            Выбранный рацион питания: { selectedDiet.name }
-          </Typography>
-        : <Typography sx={{  }}>
-            Вы не выбрали рацион питания
-          </Typography>
-      }
+      <LineChart
+        height={300}
+        xAxis={[
+          {
+            data: xAxis,
+            tickMinStep: 3600 * 1000 * 24,
+            scaleType: 'time',
+            valueFormatter: (date) => date.toLocaleDateString('ru-RU')
+          }
+        ]}
+        series={series}
+      />
       <Typography variant="h4" mb="8px">
         Приёмы пищи
       </Typography>
@@ -302,18 +431,6 @@ export default function Meals() {
             </TableRow>
           </TableHead>
           <TableBody>
-            <TableRow>
-              <TableCell />
-              <TableCell />
-              <TableCell />
-              <TableCell />
-              <TableCell />
-              <TableCell />
-              <TableCell />
-              <TableCell>
-
-              </TableCell>
-            </TableRow>
             {
               dietMealsToView.length > 0
               ? <TableRow>
@@ -379,6 +496,93 @@ export default function Meals() {
                 </TableRow>
               : null
             }
+            {
+              newMeal
+              ? <TableRow>
+                  <TableCell>
+                    { newMeal.name }
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      sx={{ marginRight: "4px", maxWidth: "60px" }}
+                      placeholder="Вес"
+                      type="number"
+                      value={newMeal.amount}
+                      onChange={(event) => setNewMeal((newMeal) => ({...newMeal, amount: event.target.value}))}
+                    />
+                    г.
+                  </TableCell>
+                  <TableCell>
+                    { (newMeal.calories * newMeal.amount).toFixed(2) } ккал
+                  </TableCell>
+                  <TableCell>
+                    { (newMeal.proteins * newMeal.amount).toFixed(2) } г.
+                  </TableCell>
+                  <TableCell>
+                    { (newMeal.fats * newMeal.amount).toFixed(2) } г.
+                  </TableCell>
+                  <TableCell>
+                    { (newMeal.carbohydrates * newMeal.amount).toFixed(2) } г.
+                  </TableCell>
+                  <TableCell>
+                    <DateTimePicker
+                      ampm={false}
+                      minDate={weekAgo}
+                      maxDate={today}
+                      value={newMeal.eatenAt}
+                      onChange={(event) => setNewMeal((newMeal) => ({...newMeal, eatenAt: event}))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
+                      {
+                        newMeal
+                        ? <>
+                            <LoadingButton
+                              loading={creatingLoading}
+                              disabled={!canAdd}
+                              variant="contained"
+                              onClick={handleCreateNewMeal}
+                            >
+                              Добавить
+                            </LoadingButton>
+                            <Button
+                              variant="outlined"
+                              onClick={() => setNewMeal(null)}
+                            >
+                              Отменить
+                            </Button>
+                          </> 
+                        : <Button
+                            variant="contained"
+                            onClick={() => setSelectingDish(true)}
+                          >
+                            Добавить
+                          </Button>
+                      }
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              : <TableRow>
+                  <TableCell />
+                  <TableCell />
+                  <TableCell />
+                  <TableCell />
+                  <TableCell />
+                  <TableCell />
+                  <TableCell />
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
+                      <Button
+                        variant="contained"
+                        onClick={() => setSelectingDish(true)}
+                      >
+                        Добавить
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+            }
             {mealsToView.map((row) => (
               <TableRow
                 key={row.id}
@@ -418,6 +622,8 @@ export default function Meals() {
                     updatedMeals[row.id]
                     ? <DateTimePicker
                         ampm={false}
+                        minDate={weekAgo}
+                        maxDate={today}
                         value={updatedMeals[row.id].eatenAt}
                         onChange={(event) => handleChangeMealEatenAt(event, row.id)}
                       />
@@ -432,6 +638,7 @@ export default function Meals() {
                           <LoadingButton
                             loading={row.editingLoading}
                             variant="contained"
+                            disabled={!canEdit(row.id)}
                             onClick={() => handleEditMeal(row.id)}
                           >
                             Сохранить
@@ -451,18 +658,14 @@ export default function Meals() {
                           >
                             Изменить
                           </Button>
-                          <Tooltip title="Вы не можете удалить продукт, пока он используется в хотя бы одном блюде" arrow>
-                            <Box>
-                              <LoadingButton
-                                loading={row.removingLoading}
-                                variant="contained"
-                                color="error"
-                                onClick={() => handleRemoveMeal(row.id)}
-                              >
-                                Удалить
-                              </LoadingButton>
-                            </Box>
-                          </Tooltip>
+                          <LoadingButton
+                            loading={row.removingLoading}
+                            variant="contained"
+                            color="error"
+                            onClick={() => handleRemoveMeal(row.id)}
+                          >
+                            Удалить
+                          </LoadingButton>
                         </>
                     }
                   </Box>

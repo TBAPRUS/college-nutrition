@@ -77,6 +77,8 @@ app.post('/meals', mealsController.post);
 app.put('/meals/:id', mealsController.put);
 app.delete('/meals/:id', mealsController.delete);
 
+app.get('/statistic', mealsController.statistic);
+
 app.get('/test', (req, res) => res.status(200).end('good'))
 
 app.use(errorHandler.handle)

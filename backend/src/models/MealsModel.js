@@ -94,22 +94,11 @@ class MealsModel {
     return this.mapFromDB(rows);
   }
 
-  async getSelected(userId) {
-    const user = await this.client.query('SELECT selected_meal_id FROM users WHERE id = $1', [userId])
-    if (user.rows[0].selected_meal_id === null) {
-      return null
-    }
-    return (await this.getById(user.rows[0].selected_meal_id))[0]
-  }
-
-  async select(mealId, userId) {
-    await this.client.query('UPDATE users SET selected_meal_id = $1 WHERE id = $2', [mealId, userId])
-  }
-
   async create(meal) {
     try {
       const eatenAt = new Date(new Date(meal.eatenAt).getTime() - new Date().getTimezoneOffset() * 60000).toISOString()
       await this.client.query('BEGIN')
+      
       const { rows } = await this.client.query(`
           INSERT INTO meals(dish_id, user_id, eaten_at, amount)
           VALUES($1, $2, $3, $4)
@@ -146,6 +135,60 @@ class MealsModel {
 
   async delete(id) {
     await this.client.query('DELETE FROM meals WHERE id = $1', [id]);
+  }
+
+  async statistic(timezoneOffset, userId) {
+    const to = new Date(new Date().getTime() - timezoneOffset * 60000).toISOString();
+    let from = new Date();
+    from.setDate(from.getDate() - 7);
+    from.setHours(0, 0, 0, 0)
+    from = new Date(from.getTime() - timezoneOffset * 60000)
+    const data = await this.client.query(`
+        SELECT 
+          m.id as meal_id, m.eaten_at as meal_eaten_at, m.amount as meal_amount,
+          dg.amount as grocery_amount, g.proteins as grocery_proteins, g.fats as grocery_fats, g.carbohydrates as grocery_carbohydrates
+        FROM meals m
+        LEFT JOIN dishes ON dishes.id = m.dish_id
+        LEFT JOIN dishes_groceries dg ON dg.dish_id = dishes.id
+        LEFT JOIN groceries g ON dg.grocery_id = g.id
+        WHERE eaten_at <= $1 AND eaten_at >= $2 AND m.user_id = $3
+      `,
+      [to, from, userId]
+    )
+    return this.mapFromDB(data.rows).map((meal) => {
+        let weight = 0;
+        let proteins = 0;
+        let fats = 0;
+        let carbohydrates = 0;
+
+        meal.groceries.forEach((grocery) => {
+          weight += grocery.amount;
+          proteins += grocery.proteins * grocery.amount / 100;
+          fats += grocery.fats * grocery.amount / 100;
+          carbohydrates += grocery.carbohydrates * grocery.amount / 100;
+        })
+
+        if (weight === 0) return {...meal, calories: 0, proteins: 0, fats: 0, carbohydrates: 0}
+
+        return {
+          ...meal,
+          calories: (proteins * 4.1 + fats * 9.29 + carbohydrates * 4.2) / weight * meal.amount,
+          proteins: proteins / weight * meal.amount,
+          fats: fats / weight * meal.amount,
+          carbohydrates: carbohydrates / weight * meal.amount,
+        }
+      }).reduce((acc, cur) => {
+        const date = new Date(new Date(cur.eatenAt).getTime() + new Date().getTimezoneOffset() * 60000 - timezoneOffset * 60000)
+        date.setHours(0, 0, 0, 0)
+        if (!acc[date.toISOString()]) {
+          acc[date.toISOString()] = {calories: 0, proteins: 0, fats: 0, carbohydrates: 0}  
+        }
+        acc[date.toISOString()].calories += cur.calories
+        acc[date.toISOString()].proteins += cur.proteins
+        acc[date.toISOString()].fats += cur.fats
+        acc[date.toISOString()].carbohydrates += cur.carbohydrates
+        return acc
+      }, {})
   }
 }
 

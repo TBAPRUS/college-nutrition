@@ -141,11 +141,12 @@ export default function PersonalGroceries() {
             id="search"
             value={search}
             onChange={handleChangeSearch}
-          />
+            />
         </FormControl>
 
         <LoadingButton
           loading={gettingLoading}
+          disabled={!search}
           variant="contained"
           onClick={handleClickSearch}
         >

@@ -17,7 +17,7 @@ import 'dayjs/locale/ru'
 
 axios.defaults.withCredentials = true
 axios.interceptors.request.use(function (config) {
-  config.url = `http://localhost:7777${config.url}`;
+  config.url = `http://192.168.0.102:7777${config.url}`;
   return config
 })
 
@@ -59,19 +59,17 @@ const Bootstrap = () => {
 
   return (
     <React.StrictMode>
-      {/* <p>hui</p> */}
-      <marquee>{new Array(100).fill(null).map(() => ('hui '))}</marquee>
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale='ru'>
         <UserContext.Provider value={userContextValue}>
           <BrowserRouter>
             <Routes>
-              <Route path="/meals" element={user ? <Meals /> : <Navigate to="/login" />} />
+              <Route path="/meals" element={(user && !user.isAdmin) ? <Meals /> : <Navigate to="/login" />} />
               <Route path="/groceries" element={user ? <Groceries /> : <Navigate to="/login" />} />
-              <Route path="/dishes" element={user ? <Dishes /> : <Navigate to="/login" />} />
-              <Route path="/diets" element={user ? <Diets /> : <Navigate to="/login" />} />
+              <Route path="/dishes" element={(user && !user.isAdmin)  ? <Dishes /> : <Navigate to="/login" />} />
+              <Route path="/diets" element={(user && !user.isAdmin)  ? <Diets /> : <Navigate to="/login" />} />
               <Route path="/users" element={user?.isAdmin ? <Users /> : <Navigate to="/login" />} />
-              <Route path="/login" element={user ? <Navigate to="/groceries" /> : <Login onLogin={onLogin} />} />
-              <Route path="*" element={<Navigate to="/groceries" />} />
+              <Route path="/login" element={user ? user.isAdmin ? <Navigate to="/groceries" /> : <Navigate to="/meals" /> : <Login onLogin={onLogin} />} />
+              <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
           </BrowserRouter>
         </UserContext.Provider>

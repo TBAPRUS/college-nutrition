@@ -254,12 +254,10 @@ export default function DietRow(props) {
     () => name?.length > 0 &&
       !diet.dishes
         .filter(({id}) => !removedDishes[id] && updatedDishes[id])
-        .find((dish) => !updatedDishes[dish.id].time || !(updatedDishes[dish.id].time.hour() >= 0 && updatedDishes[dish.id].time.minute() >= 0) || !(parseInt(updatedDishes[dish.id].amount) > 0)) &&
-      !addedDishes.find((dish) => !dish.amount || !dish.time),
+        .find((dish) => !updatedDishes[dish.id]?.time?.isValid() || !(parseInt(updatedDishes[dish.id].amount) > 0)) &&
+      !addedDishes.find((dish) => !(parseInt(dish.amount) > 0) || !dish?.time?.isValid()),
     [name, diet, removedDishes, updatedDishes, addedDishes]
   )
-
-  console.log(addedDishes)
 
   return (
     <>

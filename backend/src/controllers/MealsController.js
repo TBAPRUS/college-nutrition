@@ -25,11 +25,10 @@ class MealsController {
     })
   
     this.get = this.get.bind(this);
-    this.getSelected = this.getSelected.bind(this);
-    this.select = this.select.bind(this);
     this.post = this.post.bind(this);
     this.put = this.put.bind(this);
     this.delete = this.delete.bind(this);
+    this.statistic = this.statistic.bind(this)
   }
 
   async get(req, res, next) {
@@ -45,27 +44,6 @@ class MealsController {
       res.json(meals);
     } catch (err) {
       next(err);
-    }
-  }
-
-  async getSelected(req, res, next) {
-    try {
-      const meal = await this.mealsModel.getSelected(req.user.id)
-      res.json(meal)
-    } catch (err) {
-      next(err)
-    }
-  }
-
-  async select(req, res, next) {
-    try {
-      const { mealId } = await this.selectSchema.validate(req.body, {
-        stripUnknown: true
-      })
-      await this.mealsModel.select(mealId, req.user.id)
-      res.json()
-    } catch (err) {
-      next(err)
     }
   }
 
@@ -99,6 +77,15 @@ class MealsController {
       res.json({});
     } catch (err) {
       next(err);
+    }
+  }
+
+  async statistic(req, res, next) {
+    try {
+      const data = await this.mealsModel.statistic(req.query.timezoneOffset || 0, req.user.id)
+      res.json(data)
+    } catch (err) {
+      next(err)
     }
   }
 }
