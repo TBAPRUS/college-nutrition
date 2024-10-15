@@ -255,27 +255,14 @@ export default function GeneralGroceries() {
                   <Box sx={{ display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
                     {
                       user.isAdmin 
-                      ? row.dishesCount > 0
-                        ? <Tooltip title="Вы не можете удалить продукт, пока он используется в хотя бы одном блюде" arrow>
-                            <Box>
-                              <LoadingButton
-                                loading={row.loading}
-                                disabled
-                                variant="contained"
-                                color="error"
-                              >
-                                Удалить
-                              </LoadingButton>
-                            </Box>
-                          </Tooltip>
-                        : <LoadingButton
-                            loading={row.loading}
-                            variant="contained"
-                            color="error"
-                            onClick={() => handleRemoveGrocery(row.id)}
-                          >
-                            Удалить
-                          </LoadingButton>
+                      ? <LoadingButton
+                          loading={row.loading}
+                          variant="contained"
+                          color="error"
+                          onClick={() => handleRemoveGrocery(row.id)}
+                        >
+                          Удалить
+                        </LoadingButton>
                       : null
                     }
                   </Box>

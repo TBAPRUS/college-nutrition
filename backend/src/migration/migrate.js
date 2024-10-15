@@ -149,10 +149,6 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       'INSERT INTO groceries(name, proteins, fats, carbohydrates, is_liquid) VALUES($1, $2, $3, $4, $5)',
       grocery
     )));
-    // await Promise.all(groceries.map((grocery) => this.client.query(
-    //   'INSERT INTO groceries(name, proteins, fats, carbohydrates, is_liquid, user_id) VALUES($1, $2, $3, $4, $5, $6)',
-    //   [...grocery, 2]
-    // )));
   }
 
   async fillDishes() {
@@ -205,6 +201,7 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       'INSERT INTO diets(user_id, name) VALUES($1, $2)',
       row
     )))
+    await this.client.query('UPDATE users SET selected_diet_id = 1 WHERE id = 2')
   }
 
   async fillDietsDishesTable() {
@@ -220,33 +217,40 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
     )))
   }
 
-  getDate(hoursAgo, minutesAge = 0) {
+  getDate(daysAgo, hoursAgo) {
     const date = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-    date.setHours(date.getHours() - hoursAgo)
-    date.setMinutes(date.getMinutes() - minutesAge)
+    date.setHours(hoursAgo)
+    date.setDate(date.getDate() - daysAgo)
     return date.toISOString()
   }
 
   async fillMealsTable() {
     const data = [
-      [1, 2, 0, 0, 470],
-      [2, 2, 1, 0, 300],
-      [3, 2, 2, 45, 500],
-      [4, 2, 8, 25, 220],
-      [1, 2, 12, 0, 350],
-      [2, 2, 23, 11, 455],
-      [3, 2, 34, 45, 233],
-      [4, 2, 36, 2, 160],
-      [3, 2, 56, 2, 600],
-      [4, 2, 64, 2, 160],
-      [4, 2, 78, 2, 160],
-      [3, 2, 87, 2, 160],
-      [4, 2, 95, 2, 160],
-      [1, 2, 111, 0, 470],
-      [1, 2, 111, 0, 470],
-      [1, 2, 120, 0, 470],
-      [4, 2, 144, 2, 160],
-      [4, 2, 156, 2, 160],
+      [4, 2, 0, 0, 220],
+      [1, 2, 1, 0, 350],
+      [2, 2, 1, 13, 455],
+      [3, 2, 1, 18, 233],
+      [4, 2, 1, 21, 340],
+      [4, 2, 2, 7, 160],
+      [4, 2, 2, 10, 800],
+      [2, 2, 2, 16, 500],
+      [3, 2, 2, 18, 600],
+      [3, 2, 3, 10, 600],
+      [4, 2, 3, 10, 620],
+      [4, 2, 3, 10, 990],
+      [4, 2, 3, 10, 160],
+      [4, 2, 4, 10, 160],
+      [4, 2, 4, 10, 350],
+      [3, 2, 4, 10, 160],
+      [2, 2, 4, 10, 450],
+      [4, 2, 5, 10, 160],
+      [1, 2, 5, 10, 470],
+      [1, 2, 5, 10, 470],
+      [1, 2, 5, 10, 470],
+      [4, 2, 6, 10, 450],
+      [2, 2, 6, 10, 450],
+      [1, 2, 6, 10, 450],
+      [4, 2, 6, 10, 160],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO meals(dish_id, user_id, eaten_at, amount) VALUES($1, $2, $3, $4)',
