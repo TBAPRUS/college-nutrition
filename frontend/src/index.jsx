@@ -17,7 +17,7 @@ import 'dayjs/locale/ru'
 
 axios.defaults.withCredentials = true
 axios.interceptors.request.use(function (config) {
-  config.url = `http://192.168.0.102:7777${config.url}`;
+  config.url = `http://localhost:7777${config.url}`;
   return config
 })
 
