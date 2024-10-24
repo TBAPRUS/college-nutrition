@@ -24,7 +24,7 @@ class DietsModel {
         diet = acc[acc.length - 1];
       }
       if (cur.dish_id !== null) {
-        let dish = diet.dishes.find(({ id }) => id === cur.dish_id);
+        let dish = diet.dishes.find(({ id, time }) => id === cur.dish_id && time === cur.dish_time);
         if (!dish) {
           diet.dishes.push({
             time: cur.dish_time,

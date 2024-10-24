@@ -38,8 +38,9 @@ export default function Diets() {
           setTotal(data.total)
           setDiets(data.diets.map((diet) => ({
             ...diet,
-            dishes: diet.dishes.map((dish) => ({
+            dishes: diet.dishes.map((dish, i) => ({
               ...dish,
+              key: dish.id + ':' + i,
               time: dayjs().hour(dish.time.slice(0, 2)).minute(dish.time.slice(3, 5))
             })),
             loading: false

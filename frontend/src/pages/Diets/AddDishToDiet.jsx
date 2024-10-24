@@ -17,7 +17,7 @@ export default function AddDishToDiet(props) {
       })
         .then((data) => {
           if (requestNumber !== currentNumber) return;
-          setDishes(data.data.dishes.filter(({id}) => !ids[id]))
+          setDishes(data.data.dishes)
         })
         .catch((error) => {
           console.log(error)
@@ -25,7 +25,6 @@ export default function AddDishToDiet(props) {
     }
   })()
   
-  const ids = useMemo(() => props.ids.reduce((acc, cur) => ({...acc, [cur]: true}), {}))
 
   const handleChangeSearch = (event) => {
     setSearch(event.target.value)

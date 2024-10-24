@@ -221,9 +221,10 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       [1, 2, '12:10', 400],
       [1, 4, '19:30', 400],
       [2, 1, '8:00', 400],
-      [2, 5, '12:00', 500],
-      [2, 4, '16:00', 550],
-      [2, 2, '20:00', 550],
+      [2, 5, '11:00', 400],
+      [2, 4, '14:00', 450],
+      [2, 2, '17:00', 450],
+      [2, 5, '20:00', 300],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO diets_dishes(diet_id, dish_id, time, amount) VALUES($1, $2, $3, $4)',

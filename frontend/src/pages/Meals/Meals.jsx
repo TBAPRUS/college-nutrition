@@ -8,6 +8,8 @@ import { DateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { LineChart } from "@mui/x-charts";
 
+const addZero = (num) => num >= 10 ? num.toString() : `0${num}`
+
 export default function Meals() {
   const [meals, setMeals] = useState([])
   const [statistic, setStatistic] = useState(null)
@@ -81,11 +83,11 @@ export default function Meals() {
     meals.forEach(({dishId, eatenAt}) => {
       const date = new Date(eatenAt)
       if (date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate()) {
-        eatenDishes[dishId] = true
+        eatenDishes[`${dishId}:${addZero(date.getHours())}:${addZero(date.getMinutes())}:00`] = true
       }
     })
     return selectedDiet.dishes
-      .filter((dish) => !eatenDishes[dish.id])
+      .filter((dish) => !eatenDishes[dish.id + ':' + dish.time])
       .map((dish) => {
         let weight = 0;
         let proteins = 0;
@@ -303,10 +305,10 @@ export default function Meals() {
     }
   }
 
-  const handleAddDietMeal = async (id) => {
-    setSelectedDiet((selectedDiet) => ({...selectedDiet, dishes: selectedDiet.dishes.map((dish) => dish.id === id ? ({...dish, creatingLoading: true}) : dish)}))
-    await addMeal(selectedDiet.dishes.find((dish) => dish.id === id))
-    setSelectedDiet((selectedDiet) => ({...selectedDiet, dishes: selectedDiet.dishes.map((dish) => dish.id === id ? ({...dish, creatingLoading: false}) : dish)}))
+  const handleAddDietMeal = async (key) => {
+    setSelectedDiet((selectedDiet) => ({...selectedDiet, dishes: selectedDiet.dishes.map((dish) => dish.id + dish.time === key ? ({...dish, creatingLoading: true}) : dish)}))
+    await addMeal(selectedDiet.dishes.find((dish) => dish.id + dish.time === key))
+    setSelectedDiet((selectedDiet) => ({...selectedDiet, dishes: selectedDiet.dishes.map((dish) => dish.id + dish.time === key ? ({...dish, creatingLoading: false}) : dish)}))
   }
 
   const handleRemoveMeal = async (id) => {
@@ -354,18 +356,8 @@ export default function Meals() {
     setCreatingLoading(false)
   }
 
-  const bgColorByMeal = (meal) => {
-    const today = new Date();
-    const date = new Date(meal.eatenAt)
-    if (dietDishesId[meal.dishId] && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate()) {
-      return '#1976d210'
-    }
-    return 'white'
-  }
-
   const stringDateToView = (stringDate) => {
     const date = new Date(stringDate)
-    const addZero = (num) => num >= 10 ? num.toString() : `0${num}`
     return `${addZero(date.getDate())}.${addZero(date.getMonth() + 1)}.${date.getFullYear()} ${addZero(date.getHours())}:${addZero(date.getMinutes())}`
   }
 
@@ -376,7 +368,7 @@ export default function Meals() {
   const canAdd = parseInt(newMeal?.amount) > 0 && newMeal?.eatenAt?.isValid();
   const weekAgo = (() => {
     const week = new Date()
-    week.setDate(week.getDate() - 7)
+    week.setDate(week.getDate() - 6)
     return dayjs(week)
   })()
   const today = dayjs()
@@ -444,10 +436,11 @@ export default function Meals() {
             }
             {dietMealsToView.map((row) => (
               <TableRow
-                key={row.id}
+                key={row.id + row.time}
                 sx={{ background: '#1976d210' }}
               >
                 <TableCell>
+                  {row.key}
                   { row.name }
                 </TableCell>
                 <TableCell>
@@ -475,7 +468,7 @@ export default function Meals() {
                         <LoadingButton
                           loading={row.creatingLoading}
                           variant="contained"
-                          onClick={() => handleAddDietMeal(row.id)}
+                          onClick={() => handleAddDietMeal(row.id + row.time)}
                         >
                           Добавить
                         </LoadingButton>
@@ -586,7 +579,6 @@ export default function Meals() {
             {mealsToView.map((row) => (
               <TableRow
                 key={row.id}
-                sx={{ background: bgColorByMeal(row) }}
               >
                 <TableCell>
                   { row.name }

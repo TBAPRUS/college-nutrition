@@ -79,13 +79,8 @@ export default function DietRow(props) {
       carbohydrates: carbohydrates,
     }
   }, [props.diet])
-  
-  const containedDishesId = useMemo(() =>
-    [diet.dishes.map(({id}) => id), addedDishes.map(({id}) => id)].flat(),
-    [diet.dishes, addedDishes]
-  )
 
-  const addedDishesToView = useMemo(() => addedDishes.map((dish) => {
+  const addedDishesToView = useMemo(() => addedDishes.map((dish, i) => {
     let weight = 0
     let proteins = 0
     let fats = 0
@@ -108,6 +103,7 @@ export default function DietRow(props) {
 
     return {
       ...dish,
+      key: dish.id + dish.time + i,
       calories: proteins * 4.1 + fats * 9.29 + carbohydrates * 4.2,
       proteins,
       fats,
@@ -125,7 +121,7 @@ export default function DietRow(props) {
     setName(diet.name)
     setOpen(true)
     setUpdatedDishes(diet.dishes.reduce((acc, cur) => {
-      acc[cur.id] = {amount: cur.amount, time: cur.time}
+      acc[cur.key] = {amount: cur.amount, time: cur.time}
       return acc
     }, {}))
   }
@@ -153,10 +149,10 @@ export default function DietRow(props) {
   }
 
   const handleChangeAmount = (event, id) => {
-    const isAdded = addedDishes.find((grocery) => grocery.id === id)
-    if (isAdded) {
+    const isAdded = addedDishesToView.findIndex((grocery) => grocery.key === id)
+    if (isAdded !== -1) {
       setAddedDishes((dishes) =>
-        dishes.map((dish) => dish.id == id ? {...dish, amount: event.target.value} : dish))
+        dishes.map((dish, i) => i === isAdded ? {...dish, amount: event.target.value} : dish))
     } else {
       setUpdatedDishes((updatedDishes) => ({
         ...updatedDishes,
@@ -169,10 +165,10 @@ export default function DietRow(props) {
   }
 
   const handleChangeTime = (value, id) => {
-    const isAdded = addedDishes.find((grocery) => grocery.id === id)
-    if (isAdded) {
+    const isAdded = addedDishesToView.findIndex((grocery) => grocery.key === id)
+    if (isAdded !== -1) {
       setAddedDishes((dishes) =>
-        dishes.map((dish) => dish.id == id ? {...dish, time: value} : dish))
+        dishes.map((dish, i) => i === isAdded ? {...dish, time: value} : dish))
     } else {
       setUpdatedDishes((updatedDishes) => ({
         ...updatedDishes,
@@ -192,8 +188,8 @@ export default function DietRow(props) {
     }, ...dishes]))
   }
 
-  const handleRemoveAddedDish = (id) => {
-    setAddedDishes((dishes) => dishes.filter((dish) => dish.id !== id))
+  const handleRemoveAddedDish = (index) => {
+    setAddedDishes((dishes) => dishes.filter((dish, i) => i !== index))
   }
 
   const handleClickRemove = async () => {
@@ -210,16 +206,18 @@ export default function DietRow(props) {
   const handleSave = async () => {
     setSavingLoading(true)
     try {
+      console.log(updatedDishes)
+      console.log(diet.dishes)
       await axios.put(`/diets/${diet.id}`, {
         name,
         dishes: [
           ...addedDishes.map((dish) => ({id: dish.id, amount: parseInt(dish.amount), time: formatDate(dish.time)})),
           ...diet.dishes
-            .filter(({id}) => !removedDishes[id])
+            .filter(({key}) => !removedDishes[key])
             .map((dish) => ({
               id: dish.id,
-              amount: parseInt(updatedDishes[dish.id] ? updatedDishes[dish.id].amount : dish.amount),
-              time: updatedDishes[dish.id] ? formatDate(updatedDishes[dish.id].time) : formatDate(dish.time)
+              amount: parseInt(updatedDishes[dish.key] ? updatedDishes[dish.key].amount : dish.amount),
+              time: updatedDishes[dish.key] ? formatDate(updatedDishes[dish.key].time) : formatDate(dish.time)
             }))
         ]
       })
@@ -253,8 +251,8 @@ export default function DietRow(props) {
   const canEdit = useMemo(
     () => name?.length > 0 &&
       !diet.dishes
-        .filter(({id}) => !removedDishes[id] && updatedDishes[id])
-        .find((dish) => !updatedDishes[dish.id]?.time?.isValid() || !(parseInt(updatedDishes[dish.id].amount) > 0)) &&
+        .filter(({key}) => !removedDishes[key] && updatedDishes[key])
+        .find((dish) => !updatedDishes[dish.key]?.time?.isValid() || !(parseInt(updatedDishes[dish.key].amount) > 0)) &&
       !addedDishes.find((dish) => !(parseInt(dish.amount) > 0) || !dish?.time?.isValid()),
     [name, diet, removedDishes, updatedDishes, addedDishes]
   )
@@ -426,8 +424,8 @@ export default function DietRow(props) {
                     )
                     : null
                   }
-                  {addedDishesToView.map((row) => (
-                    <TableRow key={row.id} sx={{ background: '#ebffe2' }}>
+                  {addedDishesToView.map((row, i) => (
+                    <TableRow key={row.key} sx={{ background: '#ebffe2' }}>
                       <TableCell>
                         { row.name }
                       </TableCell>
@@ -437,7 +435,7 @@ export default function DietRow(props) {
                           placeholder="Вес"
                           type="number"
                           value={row.amount}
-                          onChange={(event) => handleChangeAmount(event, row.id)}
+                          onChange={(event) => handleChangeAmount(event, row.key)}
                         />
                         г.
                       </TableCell>
@@ -460,7 +458,7 @@ export default function DietRow(props) {
                             views={['hours', 'minutes']}
                             format="HH:mm"
                             value={row.time}
-                            onChange={(event) => handleChangeTime(event, row.id)}
+                            onChange={(event) => handleChangeTime(event, row.key)}
                           />
                         }
                       </TableCell>
@@ -470,7 +468,7 @@ export default function DietRow(props) {
                             variant="contained"
                             size="small"
                             color="error"
-                            onClick={() => handleRemoveAddedDish(row.id)}
+                            onClick={() => handleRemoveAddedDish(i)}
                           >
                             Удалить
                           </Button>
@@ -480,8 +478,8 @@ export default function DietRow(props) {
                   ))}
                   {diet.dishes.map((row) => (
                     <TableRow
-                      key={row.id}
-                      sx={{ background: removedDishes[row.id] ? '#ffe2e2' : '#fff' }}
+                      key={row.key}
+                      sx={{ background: removedDishes[row.key] ? '#ffe2e2' : '#fff' }}
                     >
                       <TableCell>
                         { row.name }
@@ -493,25 +491,25 @@ export default function DietRow(props) {
                               sx={{ marginRight: "4px", maxWidth: "60px" }}
                               placeholder="Вес"
                               type="number"
-                              disabled={removedDishes[row.id] == true}
-                              value={updatedDishes[row.id] !== undefined ? updatedDishes[row.id].amount : row.amount}
-                              onChange={(event) => handleChangeAmount(event, row.id)}
+                              disabled={removedDishes[row.key] == true}
+                              value={updatedDishes[row.key] !== undefined ? updatedDishes[row.key].amount : row.amount}
+                              onChange={(event) => handleChangeAmount(event, row.key)}
                             />
                           : row.amount
                         }
                         г.
                       </TableCell>
                       <TableCell>
-                        { (row.calories * (editing && updatedDishes[row.id] ? updatedDishes[row.id].amount : row.amount)).toFixed(2) } ккал
+                        { (row.calories * (editing && updatedDishes[row.key] ? updatedDishes[row.key].amount : row.amount)).toFixed(2) } ккал
                       </TableCell>
                       <TableCell>
-                        { (row.proteins * (editing && updatedDishes[row.id] ? updatedDishes[row.id].amount : row.amount)).toFixed(2) } г.
+                        { (row.proteins * (editing && updatedDishes[row.key] ? updatedDishes[row.key].amount : row.amount)).toFixed(2) } г.
                       </TableCell>
                       <TableCell>
-                        { (row.fats * (editing && updatedDishes[row.id] ? updatedDishes[row.id].amount : row.amount)).toFixed(2) } г.
+                        { (row.fats * (editing && updatedDishes[row.key] ? updatedDishes[row.key].amount : row.amount)).toFixed(2) } г.
                       </TableCell>
                       <TableCell>
-                        { (row.carbohydrates * (editing && updatedDishes[row.id] ? updatedDishes[row.id].amount : row.amount)).toFixed(2) } г.
+                        { (row.carbohydrates * (editing && updatedDishes[row.key] ? updatedDishes[row.key].amount : row.amount)).toFixed(2) } г.
                       </TableCell>
                       <TableCell>
                         {
@@ -519,10 +517,10 @@ export default function DietRow(props) {
                           ? <TimePicker
                               ampm={false}
                               views={['hours', 'minutes']}
-                              disabled={removedDishes[row.id] == true}
+                              disabled={removedDishes[row.key] == true}
                               format="HH:mm"
-                              value={updatedDishes[row.id] !== undefined ? updatedDishes[row.id].time : row.time}
-                              onChange={(event) => handleChangeTime(event, row.id)}
+                              value={updatedDishes[row.key] !== undefined ? updatedDishes[row.key].time : row.time}
+                              onChange={(event) => handleChangeTime(event, row.key)}
                             />
                           : formatDate(row.time)
                         }
@@ -531,13 +529,13 @@ export default function DietRow(props) {
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                           {
                             editing
-                            ? !removedDishes[row.id]
+                            ? !removedDishes[row.key]
                               ? (
                                   <Button
                                     variant="contained"
                                     size="small"
                                     color="error"
-                                    onClick={() => onRemoveDish(row.id)}
+                                    onClick={() => onRemoveDish(row.key)}
                                   >
                                     Удалить
                                   </Button>
@@ -546,7 +544,7 @@ export default function DietRow(props) {
                                   <Button
                                     variant="contained"
                                     size="small"
-                                    onClick={() => onUndoRemoveDish(row.id)}
+                                    onClick={() => onUndoRemoveDish(row.key)}
                                   >
                                     Отменить
                                   </Button>
@@ -565,7 +563,6 @@ export default function DietRow(props) {
       </TableRow>
       <AddDishToDiet
         open={addingOpen}
-        ids={containedDishesId}
         onClose={() => setAddingOpen(false)}
         onSelect={handleAddDish}
       />
