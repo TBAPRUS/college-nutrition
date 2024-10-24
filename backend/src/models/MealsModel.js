@@ -138,7 +138,9 @@ class MealsModel {
   }
 
   async statistic(timezoneOffset, userId) {
-    const to = new Date(new Date().getTime() - timezoneOffset * 60000).toISOString();
+    let to = new Date(new Date().getTime() - timezoneOffset * 60000);
+    to.setDate(to.getDate() + 1)
+    to.setHours(0, 0, 0, 0)
     let from = new Date();
     from.setDate(from.getDate() - 7);
     from.setHours(0, 0, 0, 0)
@@ -151,7 +153,7 @@ class MealsModel {
         LEFT JOIN dishes ON dishes.id = m.dish_id
         LEFT JOIN dishes_groceries dg ON dg.dish_id = dishes.id
         LEFT JOIN groceries g ON dg.grocery_id = g.id
-        WHERE eaten_at <= $1 AND eaten_at >= $2 AND m.user_id = $3
+        WHERE eaten_at < $1 AND eaten_at >= $2 AND m.user_id = $3
       `,
       [to, from, userId]
     )

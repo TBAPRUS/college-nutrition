@@ -33,7 +33,7 @@ class UsersController {
       });
 
       if (query.login) {
-        query.login = `%${query.login.replaceAll(/[^а-яА-Яa-zA-Z0-9]/g, '')}%`
+        query.login = `%${query.login}%`
       }
       if (typeof query.login === 'string' && !query.login) {
         delete query.login

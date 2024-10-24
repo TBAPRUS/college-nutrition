@@ -149,6 +149,13 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       'INSERT INTO groceries(name, proteins, fats, carbohydrates, is_liquid) VALUES($1, $2, $3, $4, $5)',
       grocery
     )));
+    const customGroceries = [
+      ['Протеин Super Sport', 20, 1.7, 70.5, false, 2]
+    ]
+    await Promise.all(customGroceries.map((grocery) => this.client.query(
+      'INSERT INTO groceries(name, proteins, fats, carbohydrates, is_liquid, user_id) VALUES($1, $2, $3, $4, $5, $6)',
+      grocery
+    )));
   }
 
   async fillDishes() {
@@ -156,7 +163,8 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       [2, 'Вареная гречка'],
       [2, 'Плов'],
       [2, 'Чай черный без сахара'],
-      [2, 'Жаркое из курицы с картошкой']
+      [2, 'Жаркое из курицы с картошкой'],
+      [2, 'Протеиновый коктейль']
     ]
     await Promise.all(dishes.map((dish) => this.client.query(
       'INSERT INTO dishes(user_id, name) VALUES($1, $2)',
@@ -184,6 +192,9 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       [4, 133, 20],
       [4, 138, 10],
       [4, 62, 75],
+      [5, 181, 50],
+      [5, 70, 250],
+      [5, 122, 150],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO dishes_groceries(dish_id, grocery_id, amount) VALUES($1, $2, $3)',
@@ -194,8 +205,7 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
   async fillDietsTable() {
     const data = [
       [2, 'Будний день (еда с собой)'],
-      [2, 'Будний день (столовая)'],
-      [2, 'Тренировка - набор массы (3500 ккал)'],
+      [2, 'Тренировка - набор массы'],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO diets(user_id, name) VALUES($1, $2)',
@@ -210,6 +220,10 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       [1, 3, '8:05', 450],
       [1, 2, '12:10', 400],
       [1, 4, '19:30', 400],
+      [2, 1, '8:00', 400],
+      [2, 5, '12:00', 500],
+      [2, 4, '16:00', 550],
+      [2, 2, '20:00', 550],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO diets_dishes(diet_id, dish_id, time, amount) VALUES($1, $2, $3, $4)',
@@ -218,16 +232,15 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
   }
 
   getDate(daysAgo, hoursAgo) {
-    const date = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-    date.setHours(hoursAgo)
+    const date = new Date()
+    date.setHours(hoursAgo, 0)
     date.setDate(date.getDate() - daysAgo)
-    return date.toISOString()
+    return new Date(date.getTime() - new Date().getTimezoneOffset() * 60000).toISOString()
   }
 
   async fillMealsTable() {
     const data = [
-      [4, 2, 0, 0, 220],
-      [1, 2, 1, 0, 350],
+      [1, 2, 1, 18, 350],
       [2, 2, 1, 13, 455],
       [3, 2, 1, 18, 233],
       [4, 2, 1, 21, 340],
@@ -235,22 +248,22 @@ CREATE TABLE IF NOT EXISTS diets_dishes (
       [4, 2, 2, 10, 800],
       [2, 2, 2, 16, 500],
       [3, 2, 2, 18, 600],
-      [3, 2, 3, 10, 600],
+      [3, 2, 3, 7, 600],
       [4, 2, 3, 10, 620],
-      [4, 2, 3, 10, 990],
-      [4, 2, 3, 10, 160],
-      [4, 2, 4, 10, 160],
+      [4, 2, 3, 16, 990],
+      [4, 2, 3, 18, 160],
+      [4, 2, 4, 7, 160],
       [4, 2, 4, 10, 350],
-      [3, 2, 4, 10, 160],
-      [2, 2, 4, 10, 450],
-      [4, 2, 5, 10, 160],
+      [3, 2, 4, 16, 160],
+      [2, 2, 4, 18, 450],
+      [4, 2, 5, 7, 160],
       [1, 2, 5, 10, 470],
-      [1, 2, 5, 10, 470],
-      [1, 2, 5, 10, 470],
-      [4, 2, 6, 10, 450],
+      [1, 2, 5, 16, 470],
+      [1, 2, 5, 18, 470],
+      [4, 2, 6, 7, 450],
       [2, 2, 6, 10, 450],
-      [1, 2, 6, 10, 450],
-      [4, 2, 6, 10, 160],
+      [1, 2, 6, 16, 450],
+      [4, 2, 6, 18, 160],
     ]
     await Promise.all(data.map((row) => this.client.query(
       'INSERT INTO meals(dish_id, user_id, eaten_at, amount) VALUES($1, $2, $3, $4)',

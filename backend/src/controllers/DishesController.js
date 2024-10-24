@@ -46,7 +46,7 @@ class DishesController {
       });
 
       if (query.name) {
-        query.name = `%${query.name.replaceAll(/[^а-яА-Яa-zA-Z0-9]/g, '')}%`
+        query.name = `%${query.name}%`
       }
       if (typeof query.name === 'string' && !query.name) {
         delete query.name
